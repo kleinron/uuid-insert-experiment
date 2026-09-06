@@ -48,8 +48,12 @@ func run() error {
 		if err := enc.Encode(out); err != nil {
 			return err
 		}
-		fmt.Fprintf(os.Stderr, "arm=%s host=%s rows≈%d data=%d index=%d free=%d avg_row=%d\n",
-			h.Arm, h.Host, rep.TableRows, rep.DataLength, rep.IndexLength, rep.DataFree, rep.AvgRowLength)
+		fmt.Fprintf(os.Stderr, "arm=%s host=%s rows≈%d data=%d index=%d free=%d avg_row=%d data+index=%d\n",
+			h.Arm, h.Host, rep.TableRows, rep.DataLength, rep.IndexLength, rep.DataFree, rep.AvgRowLength, rep.DataAndIndexBytes())
+		if rep.OverRevisitThreshold() {
+			fmt.Fprintf(os.Stderr, "NOTE: measured tablespace ≥ 50 GiB (data+index=%d) — revisit instance class / InnoDB buffer pool (BP) before warmup/measure\n",
+				rep.DataAndIndexBytes())
+		}
 	}
 	return nil
 }

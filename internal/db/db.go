@@ -109,6 +109,10 @@ func splitSQL(script string) []string {
 	return out
 }
 
+// TablespaceRevisitBytes is the locked gate: measured data+index ≥ 50 GiB
+// means stop and revisit instance class / InnoDB buffer pool (BP).
+const TablespaceRevisitBytes int64 = 50 * 1024 * 1024 * 1024
+
 // Report is a tablespace / table size snapshot.
 type Report struct {
 	TableName    string `json:"table_name"`
@@ -138,6 +142,16 @@ func Tablespace(ctx context.Context, sqldb *sql.DB, schema, table string) (Repor
 		return r, fmt.Errorf("information_schema.TABLES: %w", err)
 	}
 	return r, nil
+}
+
+// DataAndIndexBytes is DATA_LENGTH + INDEX_LENGTH (InnoDB clustered PK is in data_length).
+func (r Report) DataAndIndexBytes() int64 {
+	return r.DataLength + r.IndexLength
+}
+
+// OverRevisitThreshold reports whether measured tablespace is ≥ 50 GiB.
+func (r Report) OverRevisitThreshold() bool {
+	return r.DataAndIndexBytes() >= TablespaceRevisitBytes
 }
 
 // MultiInsertSQL returns a multi-row INSERT with n value tuples.

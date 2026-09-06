@@ -44,6 +44,18 @@ func TestDSN_TLSSkipVerify(t *testing.T) {
 	}
 }
 
+func TestOverRevisitThreshold(t *testing.T) {
+	if (Report{DataLength: TablespaceRevisitBytes - 1}).OverRevisitThreshold() {
+		t.Fatal("49 GiB+ should be under the gate")
+	}
+	if !(Report{DataLength: TablespaceRevisitBytes}).OverRevisitThreshold() {
+		t.Fatal("exactly 50 GiB should trigger instance/BP revisit")
+	}
+	if !(Report{DataLength: 40 * 1024 * 1024 * 1024, IndexLength: 10 * 1024 * 1024 * 1024}).OverRevisitThreshold() {
+		t.Fatal("data+index == 50 GiB should trigger")
+	}
+}
+
 func TestMultiInsertSQL(t *testing.T) {
 	s := MultiInsertSQL(2)
 	want := "INSERT INTO payments (payment_id, merchant_id, customer_id, amount, currency, reference_id) VALUES (?,?,?,?,?,?),(?,?,?,?,?,?)"

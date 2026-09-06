@@ -16,7 +16,7 @@ config → schema → preload → warmup → measure → export
 2. `make config-check` — prints settings, resolves the password, pings MySQL.
 3. `make schema` (or `make schema BOTH=1`) — applies `sql/001_schema.sql`.
 4. `make preload` — bulk load, then identical seasoning on the current twin. Repeat for the other twin, or pass `BOTH=1`. Use the **same** `PRELOAD_*_ROWS` on both sides.
-5. `make tablespace-report` — after preload, before measure. If `data_length + index_length` ≳ **50 GiB**, flag the AWS SA before continuing.
+5. `make tablespace-report` — after preload, before measure. If measured `data_length + index_length` ≥ **50 GiB**, revisit instance class / InnoDB buffer pool (BP) with the AWS SA before continuing.
 6. `EXPERIMENT_ARM=v4 make run-arm` — warmup (histograms discarded + client settle), measure, export.
 7. `EXPERIMENT_ARM=v7 make run-arm` — same protocol on the v7 twin.
 8. `make export-metrics` — HDR p50 / p95 / p99 / p999 table from `results/`.
@@ -179,7 +179,9 @@ Infra-only outputs (`loadgen_subnet_id`, `loadgen_sg_id`, `rds_sg_id`) are not h
 terraform -chdir=/path/to/infra output -json | ./scripts/export_env_from_tf.sh >> .env
 ```
 
-After preload, run `make tablespace-report`. If measured `data_length + index_length` ≳ **50 GiB**, flag the AWS SA before warmup/measure.
+After preload, run `make tablespace-report`. If measured `data_length + index_length` ≥ **50 GiB**, revisit instance / InnoDB buffer pool (BP) before warmup/measure.
+
+`LOADGEN_INSTANCE_HINT` (from TF `loadgen_instance_id`) and `LOADGEN_AZ` are optional run notes — unused by Go. `LOADGEN_AZ` must match the RDS AZ.
 
 ## Layout
 
