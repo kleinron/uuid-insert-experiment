@@ -14,7 +14,7 @@ locals {
 
   # Locked BOM
   engine                  = "mysql"
-  engine_version          = "8.0"
+  engine_version          = "8.0.46" # exact minor; current RDS MySQL 8.0.x (us-east-1 / AWS docs)
   db_instance_class       = "db.r6g.large"
   allocated_storage       = 120
   iops                    = 12000

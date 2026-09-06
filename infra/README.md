@@ -8,8 +8,8 @@ Password happy path: **`MYSQL_SECRET_ARN`** (JSON `username` / `password`). Terr
 
 | Resource | Locked BOM |
 | --- | --- |
-| 2× RDS MySQL 8.0 | `db.r6g.large`, Single-AZ, **same AZ**, identical except identifier + `arm=v4\|v7` tags |
-| Shared parameter group | `innodb_buffer_pool_size` = `12884901888` (12 GiB) |
+| 2× RDS MySQL 8.0 | `db.r6g.large`, engine **`8.0.46`** (exact minor; current RDS MySQL 8.0.x per AWS docs / us-east-1), Single-AZ, **same AZ**, identical except identifier + `arm=v4\|v7` tags |
+| Shared parameter group | `innodb_buffer_pool_size` = `12884901888` (12 GiB); `innodb_io_capacity=5000`, `innodb_io_capacity_max=12000`; durable pair `innodb_flush_log_at_trx_commit=1` + `sync_binlog=1`; `innodb_redo_log_capacity=2147483648`; buffer-pool dump/load at shutdown/startup = 0; `innodb_flush_neighbors=0`; `innodb_adaptive_hash_index=0`. **`innodb_doublewrite` is not set** — remains default **ON**. |
 | Storage | gp3, `allocated_storage=120`, `iops=12000`, `storage_throughput=500` each |
 | RDS flags | `multi_az=false`, `publicly_accessible=false`, `backup_retention_period=0`, `skip_final_snapshot=true`, `deletion_protection=false`, `performance_insights_enabled=true`, `monitoring_interval=60` |
 | 1× EC2 loadgen | `c6i.large`, Amazon Linux 2023, **same AZ** (and a subnet in that AZ) |
@@ -18,6 +18,8 @@ Password happy path: **`MYSQL_SECRET_ARN`** (JSON `username` / `password`). Terr
 | Network | Existing VPC (`vpc_id` + `subnet_ids`). `sg_ec2` → `sg_rds` on **3306 only**. SSH to EC2 only from `allowed_ssh_cidr`. Always-on Secrets Manager **interface** VPC endpoint (`private_dns_enabled=true`, 443 from `sg_ec2`) so a private loadgen can `GetSecretValue` without NAT. yum/dnf still needs NAT or a repo mirror. |
 
 RDS DB subnet groups still need **two subnets in different AZs**. Both instances are pinned to one AZ via `availability_zone` (default: AZ of `subnet_ids[0]`).
+
+`innodb_doublewrite` is left at the RDS/MySQL default (**ON**); do not disable it. Engine is pinned to **8.0.46** (widely available RDS MySQL 8.0.x as of 2026; `auto_minor_version_upgrade=false` so the twins stay identical). After 2026-07-31, MySQL 8.0 create uses RDS Extended Support by default.
 
 ## Same-day path
 
