@@ -2,7 +2,7 @@
 
 Dedicated **short-lived** IAM user that can `terraform apply` and `terraform destroy` this locked stack, then be deleted. It is **not** the loadgen instance role.
 
-Replace `ACCOUNT_ID` and `REGION` (stack default `eu-central-1`). Resource names assume `name_prefix` default `payments-exp`. If you change the prefix, replace that string throughout the policy.
+Replace `ACCOUNT_ID` and `REGION` (stack default `eu-central-1`; example account `339712715655`). Resource names assume `name_prefix` default `payments-exp`. If you change the prefix, replace that string throughout the policy.
 
 This stack does **not** create CloudWatch Logs groups or `enabled_cloudwatch_logs_exports`. Do not add `logs:*`. CloudWatch **metrics** and Performance Insights reads are a separate post-apply need (measure-window pulls); those go on `CloudWatchAndPiRead` below.
 
@@ -183,26 +183,13 @@ Create a customer-managed policy (e.g. `payments-exp-tf-apply-destroy`) with thi
       ]
     },
     {
-      "Sid": "PassRoleLoadgenToEc2",
+      "Sid": "PassRoleLoadgenAndRdsMonitoring",
       "Effect": "Allow",
       "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::ACCOUNT_ID:role/payments-exp-loadgen",
-      "Condition": {
-        "StringEquals": {
-          "iam:PassedToService": "ec2.amazonaws.com"
-        }
-      }
-    },
-    {
-      "Sid": "PassRoleMonitoringToRds",
-      "Effect": "Allow",
-      "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::ACCOUNT_ID:role/payments-exp-rds-monitoring",
-      "Condition": {
-        "StringEquals": {
-          "iam:PassedToService": "monitoring.rds.amazonaws.com"
-        }
-      }
+      "Resource": [
+        "arn:aws:iam::ACCOUNT_ID:role/payments-exp-loadgen",
+        "arn:aws:iam::ACCOUNT_ID:role/payments-exp-rds-monitoring"
+      ]
     },
     {
       "Sid": "AttachEnhancedMonitoringToRdsRole",
@@ -226,6 +213,8 @@ Create a customer-managed policy (e.g. `payments-exp-tf-apply-destroy`) with thi
 
 `rds:DescribeDBInstances` is already covered by `rds:Describe*` in `ReadDiscovery`. If that wildcard is dropped, add `rds:DescribeDBInstances` explicitly — it is needed to resolve instance identifiers / `DbiResourceId` before a CloudWatch / PI measure-window pull.
 
+PassRole is unconditional and limited to the two role ARNs (`payments-exp-loadgen`, `payments-exp-rds-monitoring`). Do not add `iam:PassedToService` — see Gotchas.
+
 VPC networking actions (`CreateVpc`, `CreateSubnet`, `CreateInternetGateway` / attach / detach / delete, route table create / delete / associate / disassociate, `CreateRoute` / `DeleteRoute`, `ModifyVpcAttribute`, plus `CreateTags` / `DeleteTags`) live on the region-scoped EC2 mutate statement. `ModifySubnetAttribute` is included so Terraform can set `map_public_ip_on_launch` on the public subnets. Least privilege is otherwise unchanged for the locked BOM (prefixed RDS / Secrets Manager / IAM).
 
 ## Console steps
@@ -245,4 +234,5 @@ Do not delete the user while the stack (or a failed apply) is still up.
 - **EC2 `Resource: "*"`** on the mutate statement is **intentional**. VPC, subnets, IGW, route tables, security groups, interface VPC endpoints, ENIs, `CreateTags`, and `RunInstances` / `TerminateInstances` do not usefully constrain to a `payments-exp-*` name prefix. The region condition is the bound.
 - **Secret `recovery_window_in_days = 0`.** Destroy force-deletes `payments-exp/exp_app` with no recovery window so the same name can be re-applied the same day. There is no undelete.
 - **RDS service-linked role (first-time RDS).** If the account has never created an RDS instance, `AWSServiceRoleForRDS` is missing. The account owner must let AWS create that SLR (or create it once). This user is not granted `iam:CreateServiceLinkedRole`.
+- **CreateDBInstance PassRole often omits `iam:PassedToService`.** RDS does not reliably send that condition key when passing `payments-exp-rds-monitoring`, so a `PassedToService` condition fails apply with PassRole denied. Use unconditional `iam:PassRole` on those two ARNs only (`{name_prefix}-loadgen` and `{name_prefix}-rds-monitoring`).
 - **CloudWatch / PI after apply.** Without `CloudWatchAndPiRead`, post-run measure-window metric pulls fail with `AccessDenied` on `cloudwatch:GetMetricStatistics` / `pi:GetResourceMetrics`. This is metrics + Performance Insights, not CloudWatch Logs (`logs:*` stays omitted).
