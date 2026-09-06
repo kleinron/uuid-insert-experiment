@@ -19,7 +19,7 @@ locals {
   engine                  = "mysql"
   engine_version          = "8.0.46" # exact minor; current RDS MySQL 8.0.x (eu-central-1 / AWS docs)
   db_instance_class       = "db.r6g.large"
-  allocated_storage       = 120
+  allocated_storage       = 400 # MySQL gp3 min when iops/throughput are set (CreateDBInstance)
   iops                    = 12000
   storage_throughput      = 500
   innodb_buffer_pool_size = "12884901888" # 12 GiB

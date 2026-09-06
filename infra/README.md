@@ -12,7 +12,7 @@ This stack **creates its own VPC**. You do not need a pre-existing VPC or subnet
 | --- | --- |
 | 2× RDS MySQL 8.0 | `db.r6g.large`, engine **`8.0.46`** (exact minor; current RDS MySQL 8.0.x per AWS docs / eu-central-1), Single-AZ, **same AZ**, identical except identifier + `arm=v4\|v7` tags |
 | Shared parameter group | `innodb_buffer_pool_size` = `12884901888` (12 GiB); `innodb_io_capacity=5000`, `innodb_io_capacity_max=12000`; durable pair `innodb_flush_log_at_trx_commit=1` + `sync_binlog=1`; `innodb_redo_log_capacity=2147483648`; buffer-pool dump/load at shutdown/startup = 0; `innodb_flush_neighbors=0`; `innodb_adaptive_hash_index=0`. **`innodb_doublewrite` is not set** — remains default **ON**. |
-| Storage | gp3, `allocated_storage=120`, `iops=12000`, `storage_throughput=500` each |
+| Storage | gp3, `allocated_storage=400`, `iops=12000`, `storage_throughput=500` each |
 | RDS flags | `multi_az=false`, `publicly_accessible=false`, `backup_retention_period=0`, `skip_final_snapshot=true`, `deletion_protection=false`, `performance_insights_enabled=true`, `monitoring_interval=60` |
 | 1× EC2 loadgen | `c6i.large`, Amazon Linux 2023, **same AZ** (and the public subnet in that AZ) |
 | Database | name `payments_exp`, master/app user `exp_app` |
@@ -22,6 +22,12 @@ This stack **creates its own VPC**. You do not need a pre-existing VPC or subnet
 RDS DB subnet groups still need **two subnets in different AZs**. Both instances and the loadgen are pinned to one AZ via `availability_zone` (default: first AZ in `aws_region`).
 
 `innodb_doublewrite` is left at the RDS/MySQL default (**ON**); do not disable it. Engine is pinned to **8.0.46** (widely available RDS MySQL 8.0.x as of 2026; `auto_minor_version_upgrade=false` so the twins stay identical). After 2026-07-31, MySQL 8.0 create uses RDS Extended Support by default.
+
+### gp3 size floor (MySQL IOPS / throughput)
+
+AWS does **not** allow provisioned IOPS or throughput on RDS MySQL gp3 unless `allocated_storage` is **≥ 400 GiB**. Below that floor, `CreateDBInstance` fails if `iops` / `storage_throughput` are set (the previous `120` GiB BOM hit this). IOPS (`12000`) and throughput (`500` MiB/s) stay as locked; only capacity moves to `400`.
+
+**Cost (storage capacity only, ~$0.115/GB-mo class in us-east-1 / eu-central-1):** two volumes go from 2×120 = 240 GB (~$28/mo) to 2×400 = 800 GB (~$92/mo) — about **+$64/mo** or **+$2.1/day** while both exist. Provisioned IOPS / throughput charges are unchanged. A same-day 8–16 h experiment is roughly **+$0.70–$1.40** extra on capacity vs 120 GB. Destroy when measure finishes.
 
 ## Temporary IAM user
 
