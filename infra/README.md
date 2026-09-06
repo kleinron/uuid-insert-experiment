@@ -21,6 +21,10 @@ RDS DB subnet groups still need **two subnets in different AZs**. Both instances
 
 `innodb_doublewrite` is left at the RDS/MySQL default (**ON**); do not disable it. Engine is pinned to **8.0.46** (widely available RDS MySQL 8.0.x as of 2026; `auto_minor_version_upgrade=false` so the twins stay identical). After 2026-07-31, MySQL 8.0 create uses RDS Extended Support by default.
 
+## Temporary IAM user
+
+Dedicated short-lived IAM user for `terraform apply` / `destroy` of this stack: [IAM-TEMP-USER.md](IAM-TEMP-USER.md).
+
 ## Same-day path
 
 ```
