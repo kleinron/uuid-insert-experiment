@@ -34,6 +34,7 @@ resource "aws_db_instance" "arm" {
   license_model  = "general-public-license"
   port           = local.mysql_port
 
+  # MySQL gp3: allocated_storage must be >= 400 when iops/throughput are set.
   allocated_storage  = local.allocated_storage
   storage_type       = "gp3"
   iops               = local.iops
