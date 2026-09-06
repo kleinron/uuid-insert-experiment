@@ -1,7 +1,7 @@
 variable "aws_region" {
   type        = string
   description = "AWS region for all resources and the aws_region output (harness AWS_REGION)."
-  default     = "us-east-1"
+  default     = "eu-central-1"
 }
 
 variable "name_prefix" {
@@ -15,18 +15,14 @@ variable "name_prefix" {
   }
 }
 
-variable "vpc_id" {
+variable "vpc_cidr" {
   type        = string
-  description = "Existing VPC that will hold both RDS twins and the loadgen instance."
-}
-
-variable "subnet_ids" {
-  type        = list(string)
-  description = "Existing subnet IDs for the RDS DB subnet group. AWS requires at least two subnets in different AZs. One subnet in the chosen AZ is also used for the loadgen EC2."
+  description = "CIDR for the dedicated experiment VPC this stack always creates (no BYO VPC)."
+  default     = "10.42.0.0/16"
 
   validation {
-    condition     = length(var.subnet_ids) >= 2
-    error_message = "Provide at least two subnet IDs. RDS DB subnet groups require subnets in at least two AZs even for Single-AZ instances."
+    condition     = can(cidrnetmask(var.vpc_cidr)) && tonumber(split("/", var.vpc_cidr)[1]) <= 16
+    error_message = "vpc_cidr must be a valid IPv4 CIDR of /16 or larger (default 10.42.0.0/16) so two /24 public subnets fit."
   }
 }
 
@@ -34,7 +30,7 @@ variable "availability_zone" {
   type        = string
   default     = null
   nullable    = true
-  description = "AZ for both RDS instances and the loadgen EC2. Defaults to the AZ of subnet_ids[0]. That subnet list must include a subnet in this AZ."
+  description = "AZ for both RDS instances and the loadgen EC2. Defaults to the first AZ returned in aws_region. A second public subnet is still created in another AZ for the RDS DB subnet group."
 }
 
 variable "allowed_ssh_cidr" {
@@ -57,5 +53,5 @@ variable "key_name" {
 variable "associate_public_ip" {
   type        = bool
   default     = true
-  description = "Associate a public IP with the loadgen instance so SSH from allowed_ssh_cidr works on a public subnet. Set false for private subnets."
+  description = "Associate a public IP with the loadgen instance so SSH from allowed_ssh_cidr works on the public subnet (default true)."
 }
