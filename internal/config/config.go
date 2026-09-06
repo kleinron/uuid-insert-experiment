@@ -17,6 +17,8 @@ const (
 	DefaultUser              = "exp_app"
 	DefaultTargetQPS         = 500
 	DefaultPoolSize          = 32
+	DefaultReaderPoolSize    = 8
+	DefaultReaderQPS         = 500
 	DefaultWarmupMinutes     = 25
 	DefaultMeasureMinutes    = 20
 	DefaultSettleSeconds     = 120
@@ -50,6 +52,8 @@ type Config struct {
 
 	TargetQPS      float64
 	PoolSize       int
+	ReaderPoolSize int     // 0 disables concurrent PK lookups (also READERS=0)
+	ReaderQPS      float64 // target point-lookup rate when readers are enabled
 	WarmupMinutes  float64
 	MeasureMinutes float64
 	SettleSeconds  float64
@@ -85,6 +89,8 @@ func Load() (*Config, error) {
 		Arm:               strings.ToLower(strings.TrimSpace(envStr("EXPERIMENT_ARM", "v4"))),
 		TargetQPS:         envFloat("TARGET_QPS", DefaultTargetQPS),
 		PoolSize:          envInt("POOL_SIZE", DefaultPoolSize),
+		ReaderPoolSize:    envInt("READER_POOL_SIZE", DefaultReaderPoolSize),
+		ReaderQPS:         envFloat("READER_QPS", DefaultReaderQPS),
 		WarmupMinutes:     envFloat("WARMUP_MINUTES", DefaultWarmupMinutes),
 		MeasureMinutes:    envFloat("MEASURE_MINUTES", DefaultMeasureMinutes),
 		SettleSeconds:     envFloat("SETTLE_SECONDS", DefaultSettleSeconds),
@@ -97,6 +103,10 @@ func Load() (*Config, error) {
 		SeasonQPS:         envFloat("SEASON_QPS", 0),
 		ResultsDir:        envStr("RESULTS_DIR", DefaultResultsDir),
 		SchemaFile:        envStr("SCHEMA_FILE", DefaultSchemaFile),
+	}
+	// READERS=0/false/off disables the lookup pool (write-only warmup/measure).
+	if !envBool("READERS", true) {
+		c.ReaderPoolSize = 0
 	}
 	if err := c.validateStatic(); err != nil {
 		return nil, err
@@ -120,6 +130,9 @@ func (c *Config) validateStatic() error {
 	if c.PoolSize < 1 {
 		return fmt.Errorf("POOL_SIZE must be >= 1")
 	}
+	if err := c.validateReaders(); err != nil {
+		return err
+	}
 	if c.WarmupMinutes < 0 || c.MeasureMinutes < 0 || c.SettleSeconds < 0 {
 		return fmt.Errorf("WARMUP_MINUTES, MEASURE_MINUTES, SETTLE_SECONDS must be >= 0")
 	}
@@ -133,6 +146,29 @@ func (c *Config) validateStatic() error {
 		return fmt.Errorf("PRELOAD_MODE must be batch or loaddata, got %q", c.PreloadMode)
 	}
 	return nil
+}
+
+func (c *Config) validateReaders() error {
+	if c.ReaderPoolSize < 0 {
+		return fmt.Errorf("READER_POOL_SIZE must be >= 0")
+	}
+	if c.ReaderPoolSize > 0 && c.ReaderQPS <= 0 {
+		return fmt.Errorf("READER_QPS must be > 0 when readers are enabled")
+	}
+	if c.ReaderPoolSize > 0 && c.PreloadKeySpace() == 0 {
+		return fmt.Errorf("readers require PRELOAD_BULK_ROWS + PRELOAD_SEASON_ROWS > 0")
+	}
+	return nil
+}
+
+// ReadersEnabled reports whether warmup/measure should run PK point lookups.
+func (c *Config) ReadersEnabled() bool {
+	return c.ReaderPoolSize > 0
+}
+
+// PreloadKeySpace is the locked deterministic lookup range [0, bulk+season).
+func (c *Config) PreloadKeySpace() uint64 {
+	return c.PreloadBulkRows + c.PreloadSeasonRows
 }
 
 // Host returns the MySQL hostname for the current experiment arm.

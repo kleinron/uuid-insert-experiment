@@ -24,6 +24,8 @@ export PRELOAD_BULK_ROWS="${PRELOAD_BULK_ROWS:-1000}"
 export PRELOAD_SEASON_ROWS="${PRELOAD_SEASON_ROWS:-100}"
 export PRELOAD_BATCH_SIZE="${PRELOAD_BATCH_SIZE:-100}"
 export PRELOAD_WORKERS="${PRELOAD_WORKERS:-2}"
+export READER_POOL_SIZE="${READER_POOL_SIZE:-2}"
+export READER_QPS="${READER_QPS:-50}"
 
 if [[ -z "${MYSQL_PASSWORD:-}" ]]; then
   echo "Set MYSQL_PASSWORD for the local smoke run (Secrets Manager is not used)." >&2

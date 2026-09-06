@@ -38,6 +38,8 @@ func run() error {
 	fmt.Printf("MYSQL_TLS            %v\n", cfg.TLS)
 	fmt.Printf("TARGET_QPS           %.1f\n", cfg.TargetQPS)
 	fmt.Printf("POOL_SIZE            %d\n", cfg.PoolSize)
+	fmt.Printf("READER_POOL_SIZE     %d\n", cfg.ReaderPoolSize)
+	fmt.Printf("READER_QPS           %.1f\n", cfg.ReaderQPS)
 	fmt.Printf("WARMUP_MINUTES       %.4f (%s)\n", cfg.WarmupMinutes, cfg.WarmupDuration())
 	fmt.Printf("MEASURE_MINUTES      %.4f (%s)\n", cfg.MeasureMinutes, cfg.MeasureDuration())
 	fmt.Printf("SETTLE_SECONDS       %.1f\n", cfg.SettleSeconds)

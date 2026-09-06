@@ -17,6 +17,9 @@ import (
 
 const InsertSQL = `INSERT INTO payments (payment_id, merchant_id, customer_id, amount, currency, reference_id) VALUES (?, ?, ?, ?, ?, ?)`
 
+// LookupByPKSQL is a clustered primary-key point lookup (no range scan).
+const LookupByPKSQL = `SELECT merchant_id, customer_id, amount, currency, reference_id FROM payments WHERE payment_id = ?`
+
 // Open returns a pinged pool sized for the workload.
 func Open(cfg *config.Config, host string, extraConns int) (*sql.DB, error) {
 	dsn, err := DSN(cfg, host)

@@ -20,11 +20,18 @@ import (
 // PKFunc returns the next primary key (16 bytes).
 type PKFunc func() ([16]byte, error)
 
-// Stats is the outcome of one Run.
+// Stats is the outcome of one Run or RunMixed.
 type Stats struct {
-	Inserts int64
-	Errors  int64
-	Hist    *histogram.Hist
+	Inserts    int64
+	Errors     int64
+	Hist       *histogram.Hist
+	Reads      int64
+	ReadErrors int64
+	ReadHist   *histogram.Hist
+}
+
+func emptyStats() *Stats {
+	return &Stats{Hist: histogram.New(), ReadHist: histogram.New()}
 }
 
 // Run inserts at cfg.TargetQPS (or qps override if > 0) for dur.
@@ -34,7 +41,7 @@ func Run(ctx context.Context, sqldb *sql.DB, cfg *config.Config, pk PKFunc, dur 
 		qps = cfg.TargetQPS
 	}
 	if dur <= 0 {
-		return &Stats{Hist: histogram.New()}, nil
+		return emptyStats(), nil
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, dur)
@@ -47,7 +54,7 @@ func Run(ctx context.Context, sqldb *sql.DB, cfg *config.Config, pk PKFunc, dur 
 
 	log.Printf("insert loop: qps=%.1f pool=%d duration=%s record=%v", qps, cfg.PoolSize, dur, record)
 	t0 := time.Now()
-	stopLog := startProgress(&inserts, &errs, t0, qps)
+	stopLog := startProgress("inserts", &inserts, &errs, t0, qps)
 
 	for i := 0; i < cfg.PoolSize; i++ {
 		hists[i] = histogram.New()
@@ -66,7 +73,7 @@ func Run(ctx context.Context, sqldb *sql.DB, cfg *config.Config, pk PKFunc, dur 
 			merged.Merge(h)
 		}
 	}
-	st := &Stats{Inserts: inserts.Load(), Errors: errs.Load(), Hist: merged}
+	st := &Stats{Inserts: inserts.Load(), Errors: errs.Load(), Hist: merged, ReadHist: histogram.New()}
 	elapsed := time.Since(t0).Seconds()
 	actual := 0.0
 	if elapsed > 0 {
@@ -125,7 +132,7 @@ func worker(ctx context.Context, sqldb *sql.DB, pk PKFunc, limiter *rate.Limiter
 	}
 }
 
-func startProgress(inserts, errs *atomic.Int64, t0 time.Time, target float64) func() {
+func startProgress(label string, ops, errs *atomic.Int64, t0 time.Time, target float64) func() {
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -140,7 +147,7 @@ func startProgress(inserts, errs *atomic.Int64, t0 time.Time, target float64) fu
 			case <-stop:
 				return
 			case now := <-tick.C:
-				n := inserts.Load()
+				n := ops.Load()
 				e := errs.Load()
 				dt := now.Sub(lastT).Seconds()
 				inst := 0.0
@@ -152,7 +159,7 @@ func startProgress(inserts, errs *atomic.Int64, t0 time.Time, target float64) fu
 				if elapsed > 0 {
 					avg = float64(n) / elapsed
 				}
-				log.Printf("progress inserts=%d errors=%d inst_qps=%.1f avg_qps=%.1f target=%.1f", n, e, inst, avg, target)
+				log.Printf("progress %s=%d errors=%d inst_qps=%.1f avg_qps=%.1f target=%.1f", label, n, e, inst, avg, target)
 				last = n
 				lastT = now
 			}
