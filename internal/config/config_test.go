@@ -14,7 +14,7 @@ func TestLoadDefaultsAndArmHost(t *testing.T) {
 	t.Setenv("WARMUP_MINUTES", "0.05")
 	t.Setenv("PRELOAD_BULK_ROWS", "1000")
 	// Clear others that might leak from the environment.
-	for _, k := range []string{"MYSQL_PORT", "TARGET_QPS", "POOL_SIZE"} {
+	for _, k := range []string{"MYSQL_PORT", "TARGET_QPS", "POOL_SIZE", "MYSQL_TLS"} {
 		_ = os.Unsetenv(k)
 	}
 
@@ -43,6 +43,28 @@ func TestLoadDefaultsAndArmHost(t *testing.T) {
 	}
 	if c.PasswordSource() != "MYSQL_PASSWORD (local override)" {
 		t.Fatalf("source %s", c.PasswordSource())
+	}
+	if c.TLS {
+		t.Fatal("MYSQL_TLS default should be false")
+	}
+}
+
+func TestLoadMYSQLTLS(t *testing.T) {
+	t.Setenv("MYSQL_TLS", "true")
+	c, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c.TLS {
+		t.Fatal("MYSQL_TLS=true not parsed")
+	}
+	t.Setenv("MYSQL_TLS", "false")
+	c, err = Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.TLS {
+		t.Fatal("MYSQL_TLS=false should disable TLS")
 	}
 }
 

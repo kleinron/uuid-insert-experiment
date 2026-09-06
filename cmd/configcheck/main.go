@@ -35,6 +35,7 @@ func run() error {
 	fmt.Printf("password source      %s\n", cfg.PasswordSource())
 	fmt.Printf("MYSQL_SECRET_ARN     %s\n", empty(cfg.SecretARN))
 	fmt.Printf("AWS_REGION           %s\n", cfg.AWSRegion)
+	fmt.Printf("MYSQL_TLS            %v\n", cfg.TLS)
 	fmt.Printf("TARGET_QPS           %.1f\n", cfg.TargetQPS)
 	fmt.Printf("POOL_SIZE            %d\n", cfg.PoolSize)
 	fmt.Printf("WARMUP_MINUTES       %.4f (%s)\n", cfg.WarmupMinutes, cfg.WarmupDuration())

@@ -42,6 +42,10 @@ type Config struct {
 	SecretARN string
 	AWSRegion string
 
+	// TLS enables an encrypted MySQL session. Default false (same-VPC RDS).
+	// When true, the DSN uses skip-verify (same-VPC; no client CA bundle required).
+	TLS bool
+
 	Arm string // v4 | v7
 
 	TargetQPS      float64
@@ -77,6 +81,7 @@ func Load() (*Config, error) {
 		Password:          os.Getenv("MYSQL_PASSWORD"),
 		SecretARN:         strings.TrimSpace(os.Getenv("MYSQL_SECRET_ARN")),
 		AWSRegion:         envStr("AWS_REGION", "us-east-1"),
+		TLS:               envBool("MYSQL_TLS", false),
 		Arm:               strings.ToLower(strings.TrimSpace(envStr("EXPERIMENT_ARM", "v4"))),
 		TargetQPS:         envFloat("TARGET_QPS", DefaultTargetQPS),
 		PoolSize:          envInt("POOL_SIZE", DefaultPoolSize),
@@ -248,6 +253,21 @@ func envFloat(key string, def float64) float64 {
 		return def
 	}
 	return f
+}
+
+func envBool(key string, def bool) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if v == "" {
+		return def
+	}
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return def
+	}
 }
 
 func envUint64(key string, def uint64) uint64 {

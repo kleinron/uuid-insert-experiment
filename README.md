@@ -2,7 +2,7 @@
 
 Rerunnable MySQL UUID insert load harness in Go. Compares **UUIDv4 vs UUIDv7** stored as `BINARY(16)` InnoDB primary keys at about **500 inserts/sec**.
 
-This repo is **app / preload / measure code only**. Twin RDS instances are separate infrastructure.
+This repo is **app / preload / measure code only**. Twin RDS instances are separate infrastructure. PK rules and the hybrid@120 phase diagram are in [DESIGN.md](DESIGN.md).
 
 All row data is **synthetic**. There are no production credentials in the tree — use placeholders in `.env.example` and your own secrets locally or via AWS Secrets Manager.
 
@@ -16,10 +16,10 @@ config → schema → preload → warmup → measure → export
 2. `make config-check` — prints settings, resolves the password, pings MySQL.
 3. `make schema` (or `make schema BOTH=1`) — applies `sql/001_schema.sql`.
 4. `make preload` — bulk load, then identical seasoning on the current twin. Repeat for the other twin, or pass `BOTH=1`. Use the **same** `PRELOAD_*_ROWS` on both sides.
-5. `EXPERIMENT_ARM=v4 make run-arm` — warmup (histograms discarded + client settle), measure, export.
-6. `EXPERIMENT_ARM=v7 make run-arm` — same protocol on the v7 twin.
-7. `make export-metrics` — HDR p50 / p95 / p99 / p999 table from `results/`.
-8. `make tablespace-report` — `information_schema` size snapshot.
+5. `make tablespace-report` — after preload, before measure. If `data_length + index_length` ≳ **50 GiB**, flag the AWS SA before continuing.
+6. `EXPERIMENT_ARM=v4 make run-arm` — warmup (histograms discarded + client settle), measure, export.
+7. `EXPERIMENT_ARM=v7 make run-arm` — same protocol on the v7 twin.
+8. `make export-metrics` — HDR p50 / p95 / p99 / p999 table from `results/`.
 
 ```bash
 cp .env.example .env
@@ -28,6 +28,7 @@ cp .env.example .env
 make config-check
 make schema BOTH=1
 make preload BOTH=1          # full size is ~185M + ~15M; override for tests
+make tablespace-report BOTH=1
 EXPERIMENT_ARM=v4 make run-arm
 EXPERIMENT_ARM=v7 make run-arm
 make export-metrics
@@ -138,7 +139,9 @@ Copied from `.env.example`. Commands call `godotenv`; already-exported variables
 | `MYSQL_USER` | Default `exp_app` |
 | `MYSQL_SECRET_ARN` | Primary password source (Secrets Manager JSON) |
 | `MYSQL_PASSWORD` | Local override; skips AWS |
+| `MYSQL_TLS` | Default `false` (same-VPC). `true` → DSN `tls=skip-verify` |
 | `AWS_REGION` | Default `us-east-1` |
+| `LOADGEN_INSTANCE_HINT` / `LOADGEN_AZ` | Optional ops notes (unused by Go). `LOADGEN_AZ` must match the RDS AZ |
 | `EXPERIMENT_ARM` | `v4` or `v7` |
 | `TARGET_QPS` | Default `500` |
 | `POOL_SIZE` | Default `32` |
@@ -164,9 +167,24 @@ Copied from `.env.example`. Commands call `godotenv`; already-exported variables
 
 `BOTH=1` applies schema / preload / season / tablespace to both hosts.
 
+## TF interface
+
+Terraform is **not** in this repo. Locked infra output names map 1:1 via [`scripts/export_env_from_tf.sh`](scripts/export_env_from_tf.sh):
+
+`mysql_host_v4` / `mysql_host_v7`, `mysql_port`, `mysql_database`, `mysql_user`, `mysql_secret_arn`, `mysql_tls`, `aws_region`, `loadgen_instance_id` → `LOADGEN_INSTANCE_HINT`.
+
+Infra-only outputs (`loadgen_subnet_id`, `loadgen_sg_id`, `rds_sg_id`) are not harness env. There is no plaintext `mysql_password` and no `rds_endpoint_*` aliases.
+
+```bash
+terraform -chdir=/path/to/infra output -json | ./scripts/export_env_from_tf.sh >> .env
+```
+
+After preload, run `make tablespace-report`. If measured `data_length + index_length` ≳ **50 GiB**, flag the AWS SA before warmup/measure.
+
 ## Layout
 
 ```
+DESIGN.md            phases + authoritative PK rules
 cmd/loadgen          warmup + measure
 cmd/preload          bulk load
 cmd/season           seasoning
@@ -184,6 +202,7 @@ internal/bulk        batch / LOAD DATA
 internal/runner      rate-limited single-row INSERT
 sql/001_schema.sql
 scripts/local-smoke.sh
+scripts/export_env_from_tf.sh
 results/             gitignored JSON
 ```
 

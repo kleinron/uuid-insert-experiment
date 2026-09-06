@@ -63,6 +63,10 @@ func DSN(cfg *config.Config, host string) (string, error) {
 	mc.AllowNativePasswords = true
 	mc.ParseTime = true
 	mc.AllowAllFiles = cfg.PreloadMode == "loaddata"
+	if cfg.TLS {
+		// Same-VPC RDS: encrypt in transit without requiring the Amazon CA on the client.
+		mc.TLSConfig = "skip-verify"
+	}
 	return mc.FormatDSN(), nil
 }
 

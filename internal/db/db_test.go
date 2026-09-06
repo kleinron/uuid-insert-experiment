@@ -1,6 +1,11 @@
 package db
 
-import "testing"
+import (
+	"strings"
+	"testing"
+
+	"github.com/kleinron/uuid-insert-experiment/internal/config"
+)
 
 func TestSplitSQL(t *testing.T) {
 	script := `-- comment
@@ -14,6 +19,28 @@ INSERT INTO t VALUES (1);
 	}
 	if got[0] != "CREATE TABLE IF NOT EXISTS t (id INT)" {
 		t.Fatalf("stmt0=%q", got[0])
+	}
+}
+
+func TestDSN_TLSDefaultOff(t *testing.T) {
+	cfg := &config.Config{User: "exp_app", Password: "x", Port: 3306, Database: "payments_exp"}
+	dsn, err := DSN(cfg, "v4.example.internal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(dsn, "tls=") {
+		t.Fatalf("default DSN should not set tls: %s", dsn)
+	}
+}
+
+func TestDSN_TLSSkipVerify(t *testing.T) {
+	cfg := &config.Config{User: "exp_app", Password: "x", Port: 3306, Database: "payments_exp", TLS: true}
+	dsn, err := DSN(cfg, "v4.example.internal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(dsn, "tls=skip-verify") {
+		t.Fatalf("MYSQL_TLS=true should use skip-verify for same-VPC RDS, got %s", dsn)
 	}
 }
 
