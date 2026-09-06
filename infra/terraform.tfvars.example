@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars (gitignored) and replace placeholders.
+# Dummy values below are enough for `terraform validate` after `terraform init`.
+
+aws_region = "us-east-1"
+
+# Existing VPC. Do not create a new one.
+vpc_id = "vpc-00000000000000000"
+
+# RDS subnet groups need >= 2 subnets in different AZs even for Single-AZ.
+# Both RDS twins + the loadgen EC2 are placed in one AZ (subnet_ids[0] by default).
+subnet_ids = [
+  "subnet-00000000000000001",
+  "subnet-00000000000000002",
+]
+
+# Optional. Defaults to the AZ of subnet_ids[0].
+# availability_zone = "us-east-1a"
+
+# SSH to loadgen only from this CIDR.
+allowed_ssh_cidr = "203.0.113.10/32"
+
+# Existing EC2 key pair in this region (optional).
+# key_name = "uuid-insert-loadgen"
+
+# Public IP so SSH from allowed_ssh_cidr works on a public subnet.
+# associate_public_ip = true
+
+# name_prefix = "payments-exp"
