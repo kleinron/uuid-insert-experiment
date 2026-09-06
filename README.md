@@ -61,6 +61,7 @@ export EXPERIMENT_ARM=v4
 export PRELOAD_BULK_ROWS=1000 PRELOAD_SEASON_ROWS=100
 export WARMUP_MINUTES=0.05 MEASURE_MINUTES=0.1 SETTLE_SECONDS=0
 export TARGET_QPS=50 POOL_SIZE=4
+export READER_POOL_SIZE=2 READER_QPS=50
 
 make config-check
 make schema
@@ -115,10 +116,14 @@ Bulk rows use `n = 0 .. PRELOAD_BULK_ROWS-1`. Season continues at `n = PRELOAD_B
 
 - `TARGET_QPS=500`, `POOL_SIZE=32`
 - Single-row prepared `INSERT`, autocommit
-- Warmup `WARMUP_MINUTES=25` (20–30) at full rate; histograms discarded
+- Concurrent PK point lookups (`READER_POOL_SIZE=8`, `READER_QPS=500`) against already-preloaded rows — same warmup/measure window as inserts, not a second phase
+- Warmup `WARMUP_MINUTES=25` (20–30) at full rate; insert **and** read histograms discarded
 - ~2 minutes client settle at the end of warmup (`SETTLE_SECONDS=120`)
-- Measure `MEASURE_MINUTES=20`; HDR p50/p95/p99/p999 → `results/{arm}-{timestamp}.json` and `results/{arm}-latest.json`
+- Measure `MEASURE_MINUTES=20`; separate HDR p50/p95/p99/p999 for `op=insert` and `op=read` → `results/{arm}-{timestamp}.json` and `results/{arm}-latest.json`
 - `EXPERIMENT_ARM=v4|v7` selects `MYSQL_HOST_V4` or `MYSQL_HOST_V7` **and** the UUID generator
+- `READER_POOL_SIZE=0` or `READERS=0` keeps the historic write-only path
+
+Readers `SELECT` by `payment_id` only (clustered point lookup, no range scan). Keys are sampled uniformly from the deterministic preload space `[0, PRELOAD_BULK_ROWS + PRELOAD_SEASON_ROWS)` via `datagen.KeyAt` — the same IDs both twins already loaded — not from just-inserted measure UUIDs (those would sit on hot pages and hide I/O). The hypothesis is that sequential-ish UUIDv7 inserts leave more buffer-pool / I/O headroom than random v4 inserts, which should show up as better concurrent read tail latency once the table is much larger than memory.
 
 ## Preload (hybrid)
 
@@ -143,8 +148,11 @@ Copied from `.env.example`. Commands call `godotenv`; already-exported variables
 | `AWS_REGION` | Default `us-east-1` |
 | `LOADGEN_INSTANCE_HINT` / `LOADGEN_AZ` | Optional ops notes (unused by Go). `LOADGEN_AZ` must match the RDS AZ |
 | `EXPERIMENT_ARM` | `v4` or `v7` |
-| `TARGET_QPS` | Default `500` |
-| `POOL_SIZE` | Default `32` |
+| `TARGET_QPS` | Default `500` (insert rate) |
+| `POOL_SIZE` | Default `32` (insert workers) |
+| `READER_POOL_SIZE` | Default `8` PK-lookup workers. `0` disables readers |
+| `READER_QPS` | Default `500` lookup rate (same as insert QPS; stresses cache without starving writers) |
+| `READERS` | `0` / `false` / `off` disables readers even if `READER_POOL_SIZE` is set |
 | `WARMUP_MINUTES` / `MEASURE_MINUTES` | Fractional minutes allowed |
 | `SETTLE_SECONDS` | Default `120` |
 | `PRELOAD_BULK_ROWS` / `PRELOAD_SEASON_ROWS` | Hybrid preload sizes |
@@ -201,7 +209,7 @@ internal/datagen     synthetic rows + shared preload keys
 internal/histogram   HDR microseconds
 internal/metrics     results/ JSON
 internal/bulk        batch / LOAD DATA
-internal/runner      rate-limited single-row INSERT
+internal/runner      rate-limited single-row INSERT + concurrent PK lookups
 sql/001_schema.sql
 scripts/local-smoke.sh
 scripts/export_env_from_tf.sh

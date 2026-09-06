@@ -1,4 +1,4 @@
-// Package histogram wraps an HDR histogram of insert latencies in microseconds.
+// Package histogram wraps an HDR histogram of operation latencies in microseconds.
 package histogram
 
 import (

@@ -10,6 +10,7 @@ package datagen
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"math"
 	"math/rand"
 )
 
@@ -41,6 +42,28 @@ func KeyAt(n uint64) [16]byte {
 	var k [16]byte
 	copy(k[:], sum[:16])
 	return k
+}
+
+// SamplePreloadIndex returns a uniform index in [0, nKeys).
+// nKeys should be PRELOAD_BULK_ROWS + PRELOAD_SEASON_ROWS (the locked key space).
+// If nKeys is 0, the result is 0.
+func SamplePreloadIndex(rng *rand.Rand, nKeys uint64) uint64 {
+	if nKeys == 0 {
+		return 0
+	}
+	if rng == nil {
+		rng = rand.New(rand.NewSource(rand.Int63()))
+	}
+	if nKeys <= uint64(math.MaxInt64) {
+		return uint64(rng.Int63n(int64(nKeys)))
+	}
+	return rng.Uint64() % nKeys
+}
+
+// SamplePreloadKey returns KeyAt of a uniform index in the preload key space.
+// Measure readers use this so lookups hit already-preloaded rows, not hot insert pages.
+func SamplePreloadKey(rng *rand.Rand, nKeys uint64) [16]byte {
+	return KeyAt(SamplePreloadIndex(rng, nKeys))
 }
 
 // PaymentAt is a deterministic synthetic payment for row index n.

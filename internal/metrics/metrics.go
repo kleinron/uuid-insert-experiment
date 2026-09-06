@@ -14,7 +14,18 @@ import (
 	"github.com/kleinron/uuid-insert-experiment/internal/histogram"
 )
 
-// Result is one warmup-discarded, measured insert run.
+// OpMetrics is one labeled operation (insert or read) in a measure run.
+type OpMetrics struct {
+	Op        string             `json:"op"`
+	TargetQPS float64            `json:"target_qps"`
+	ActualQPS float64            `json:"actual_qps"`
+	Count     int64              `json:"count"`
+	Errors    int64              `json:"errors"`
+	PoolSize  int                `json:"pool_size"`
+	LatencyUS histogram.Snapshot `json:"latency_us"`
+}
+
+// Result is one warmup-discarded, measured run (inserts, plus optional PK lookups).
 type Result struct {
 	Arm             string             `json:"arm"`
 	Host            string             `json:"host"`
@@ -26,11 +37,19 @@ type Result struct {
 	Inserts         int64              `json:"inserts"`
 	Errors          int64              `json:"errors"`
 	PoolSize        int                `json:"pool_size"`
-	LatencyUS       histogram.Snapshot `json:"latency_us"`
+	LatencyUS       histogram.Snapshot `json:"latency_us"` // insert latency (backward compatible)
+	ReaderPoolSize  int                `json:"reader_pool_size"`
+	ReaderQPS       float64            `json:"reader_qps"`
+	ActualReadQPS   float64            `json:"actual_read_qps"`
+	Reads           int64              `json:"reads"`
+	ReadErrors      int64              `json:"read_errors"`
+	ReadLatencyUS   histogram.Snapshot `json:"read_latency_us"`
+	Ops             []OpMetrics        `json:"ops"`
 }
 
 // Write stores a timestamped JSON file and a {arm}-latest.json copy.
 func Write(dir string, r Result) (string, error) {
+	r.ensureOps()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -45,6 +64,32 @@ func Write(dir string, r Result) (string, error) {
 		return path, err
 	}
 	return path, nil
+}
+
+func (r *Result) ensureOps() {
+	if len(r.Ops) > 0 {
+		return
+	}
+	r.Ops = []OpMetrics{{
+		Op:        "insert",
+		TargetQPS: r.TargetQPS,
+		ActualQPS: r.ActualQPS,
+		Count:     r.Inserts,
+		Errors:    r.Errors,
+		PoolSize:  r.PoolSize,
+		LatencyUS: r.LatencyUS,
+	}}
+	if r.ReaderPoolSize > 0 || r.Reads > 0 {
+		r.Ops = append(r.Ops, OpMetrics{
+			Op:        "read",
+			TargetQPS: r.ReaderQPS,
+			ActualQPS: r.ActualReadQPS,
+			Count:     r.Reads,
+			Errors:    r.ReadErrors,
+			PoolSize:  r.ReaderPoolSize,
+			LatencyUS: r.ReadLatencyUS,
+		})
+	}
 }
 
 func writeJSON(path string, r Result) error {
@@ -91,18 +136,24 @@ func LoadDir(dir string) ([]Result, error) {
 	return out, nil
 }
 
-// FprintTable writes a compact comparison table.
+// FprintTable writes a compact comparison table (one row per arm/op).
 func FprintTable(w io.Writer, results []Result) {
 	if len(results) == 0 {
 		fmt.Fprintln(w, "no result JSON files in results/")
 		return
 	}
-	fmt.Fprintf(w, "%-4s  %-20s  %8s  %8s  %8s  %8s  %8s  %8s  %8s\n",
-		"arm", "started", "qps", "n", "err", "p50µs", "p95µs", "p99µs", "p999µs")
+	fmt.Fprintf(w, "%-4s  %-6s  %-20s  %8s  %8s  %8s  %8s  %8s  %8s  %8s\n",
+		"arm", "op", "started", "qps", "n", "err", "p50µs", "p95µs", "p99µs", "p999µs")
 	for _, r := range results {
-		fmt.Fprintf(w, "%-4s  %-20s  %8.1f  %8d  %8d  %8d  %8d  %8d  %8d\n",
-			r.Arm, r.StartedAt.UTC().Format("2006-01-02T15:04:05Z"),
-			r.ActualQPS, r.Inserts, r.Errors,
-			r.LatencyUS.P50, r.LatencyUS.P95, r.LatencyUS.P99, r.LatencyUS.P999)
+		fprintOp(w, r, "insert", r.ActualQPS, r.Inserts, r.Errors, r.LatencyUS)
+		if r.ReaderPoolSize > 0 || r.Reads > 0 {
+			fprintOp(w, r, "read", r.ActualReadQPS, r.Reads, r.ReadErrors, r.ReadLatencyUS)
+		}
 	}
+}
+
+func fprintOp(w io.Writer, r Result, op string, qps float64, n, errs int64, lat histogram.Snapshot) {
+	fmt.Fprintf(w, "%-4s  %-6s  %-20s  %8.1f  %8d  %8d  %8d  %8d  %8d  %8d\n",
+		r.Arm, op, r.StartedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		qps, n, errs, lat.P50, lat.P95, lat.P99, lat.P999)
 }

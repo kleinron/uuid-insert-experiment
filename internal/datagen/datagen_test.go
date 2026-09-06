@@ -44,6 +44,56 @@ func TestKeyAtNotRFCVersion4Or7(t *testing.T) {
 	}
 }
 
+func TestSamplePreloadIndexRange(t *testing.T) {
+	if SamplePreloadIndex(nil, 0) != 0 {
+		t.Fatal("nKeys=0 should return 0")
+	}
+	rng := rand.New(rand.NewSource(1))
+	const nKeys uint64 = 17
+	seen := make(map[uint64]int)
+	for i := 0; i < 2000; i++ {
+		idx := SamplePreloadIndex(rng, nKeys)
+		if idx >= nKeys {
+			t.Fatalf("index %d out of [0, %d)", idx, nKeys)
+		}
+		seen[idx]++
+	}
+	if len(seen) < 10 {
+		t.Fatalf("expected broad coverage of [0,%d), got %d distinct", nKeys, len(seen))
+	}
+	if SamplePreloadIndex(rand.New(rand.NewSource(2)), 1) != 0 {
+		t.Fatal("nKeys=1 should always return 0")
+	}
+}
+
+func TestSamplePreloadKeyUsesKeyAt(t *testing.T) {
+	nKeys := uint64(200)
+	for i := 0; i < 50; i++ {
+		k := SamplePreloadKey(rand.New(rand.NewSource(100+int64(i))), nKeys)
+		found := false
+		for n := uint64(0); n < nKeys; n++ {
+			if KeyAt(n) == k {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("sampled key not in preload space (draw %d)", i)
+		}
+	}
+}
+
+func TestSamplePreloadKeyDeterministicWithSeed(t *testing.T) {
+	a := SamplePreloadKey(rand.New(rand.NewSource(7)), 500)
+	b := SamplePreloadKey(rand.New(rand.NewSource(7)), 500)
+	if a != b {
+		t.Fatal("same seed should yield the same first sample")
+	}
+	if a != KeyAt(SamplePreloadIndex(rand.New(rand.NewSource(7)), 500)) {
+		t.Fatal("SamplePreloadKey must be KeyAt(SamplePreloadIndex)")
+	}
+}
+
 func TestPaymentAtDeterministic(t *testing.T) {
 	a := PaymentAt(42)
 	b := PaymentAt(42)

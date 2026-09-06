@@ -56,6 +56,15 @@ func TestOverRevisitThreshold(t *testing.T) {
 	}
 }
 
+func TestLookupByPKSQLIsPointLookup(t *testing.T) {
+	if !strings.Contains(LookupByPKSQL, "WHERE payment_id = ?") {
+		t.Fatalf("lookup must be a PK equality: %s", LookupByPKSQL)
+	}
+	if strings.Contains(strings.ToLower(LookupByPKSQL), "between") || strings.Contains(LookupByPKSQL, ">") || strings.Contains(LookupByPKSQL, "<") {
+		t.Fatalf("lookup must not be a range scan: %s", LookupByPKSQL)
+	}
+}
+
 func TestMultiInsertSQL(t *testing.T) {
 	s := MultiInsertSQL(2)
 	want := "INSERT INTO payments (payment_id, merchant_id, customer_id, amount, currency, reference_id) VALUES (?,?,?,?,?,?),(?,?,?,?,?,?)"
