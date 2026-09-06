@@ -15,7 +15,7 @@ Password happy path: **`MYSQL_SECRET_ARN`** (JSON `username` / `password`). Terr
 | 1× EC2 loadgen | `c6i.large`, Amazon Linux 2023, **same AZ** (and a subnet in that AZ) |
 | Database | name `payments_exp`, master/app user `exp_app` |
 | Secret | Secrets Manager JSON `{username,password}` for `exp_app`; loadgen instance role can `GetSecretValue` |
-| Network | Existing VPC (`vpc_id` + `subnet_ids`). `sg_ec2` → `sg_rds` on **3306 only**. SSH to EC2 only from `allowed_ssh_cidr`. |
+| Network | Existing VPC (`vpc_id` + `subnet_ids`). `sg_ec2` → `sg_rds` on **3306 only**. SSH to EC2 only from `allowed_ssh_cidr`. Always-on Secrets Manager **interface** VPC endpoint (`private_dns_enabled=true`, 443 from `sg_ec2`) so a private loadgen can `GetSecretValue` without NAT. yum/dnf still needs NAT or a repo mirror. |
 
 RDS DB subnet groups still need **two subnets in different AZs**. Both instances are pinned to one AZ via `availability_zone` (default: AZ of `subnet_ids[0]`).
 
