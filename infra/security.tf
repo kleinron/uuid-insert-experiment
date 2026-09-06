@@ -1,7 +1,7 @@
 resource "aws_security_group" "ec2" {
   name        = "${var.name_prefix}-sg-ec2"
   description = "Loadgen EC2: SSH from allowed_ssh_cidr; egress for package repos and Secrets Manager."
-  vpc_id      = var.vpc_id
+  vpc_id      = local.vpc_id
 
   tags = {
     Name       = "${var.name_prefix}-sg-ec2"
@@ -29,7 +29,7 @@ resource "aws_vpc_security_group_egress_rule" "ec2_all" {
 resource "aws_security_group" "rds" {
   name        = "${var.name_prefix}-sg-rds"
   description = "Twin RDS: MySQL 3306 from loadgen sg only; not public."
-  vpc_id      = var.vpc_id
+  vpc_id      = local.vpc_id
 
   tags = {
     Name       = "${var.name_prefix}-sg-rds"
@@ -41,7 +41,7 @@ resource "aws_security_group" "rds" {
 resource "aws_security_group" "sm_endpoint" {
   name        = "${var.name_prefix}-sg-sm-endpoint"
   description = "Secrets Manager interface VPC endpoint; HTTPS from loadgen sg_ec2."
-  vpc_id      = var.vpc_id
+  vpc_id      = local.vpc_id
 
   tags = {
     Name       = "${var.name_prefix}-sg-sm-endpoint"

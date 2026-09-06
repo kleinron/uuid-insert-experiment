@@ -67,7 +67,7 @@ resource "aws_instance" "loadgen" {
   lifecycle {
     precondition {
       condition     = local.loadgen_subnet_id != null
-      error_message = "No subnet in subnet_ids is in availability zone ${local.chosen_az}. The loadgen instance must share that AZ with both RDS twins."
+      error_message = "Loadgen subnet was not created in availability zone ${coalesce(local.chosen_az, "(unset)")}. Both RDS twins and the loadgen must share that AZ."
     }
   }
 }
