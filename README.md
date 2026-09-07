@@ -21,6 +21,8 @@ config → schema → preload → warmup → measure → export
 7. `EXPERIMENT_ARM=v7 make run-arm` — same protocol on the v7 twin.
 8. `make export-metrics` — HDR p50 / p95 / p99 / p999 table from `results/`.
 
+Published baseline experiment snapshots: [`results/runs/`](results/runs/).
+
 ```bash
 cp .env.example .env
 # edit .env
@@ -213,7 +215,7 @@ internal/runner      rate-limited single-row INSERT + concurrent PK lookups
 sql/001_schema.sql
 scripts/local-smoke.sh
 scripts/export_env_from_tf.sh
-results/             gitignored JSON
+results/             gitignored local JSON; published snapshots in results/runs/
 ```
 
 ## Password resolution

@@ -1,0 +1,212 @@
+----------------------
+BUFFER POOL AND MEMORY
+----------------------
+Total large memory allocated 0
+Dictionary memory allocated 568295
+Buffer pool size   786358
+Free buffers       8173
+Database pages     778185
+Old database pages 287107
+Modified db pages  376
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 32699043, not young 30500031
+0.03 youngs/s, 2.37 non-youngs/s
+Pages read 29885258, created 1595988, written 56074212
+0.48 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 994 / 1000, young-making rate 0 / 1000 not 34 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 778185, unzip_LRU len: 0
+I/O sum[0]:cur[152], unzip sum[0]:cur[0]
+----------------------
+INDIVIDUAL BUFFER POOL INFO
+----------------------
+---BUFFER POOL 0
+Buffer pool size   98292
+Free buffers       1017
+Database pages     97275
+Old database pages 35892
+Modified db pages  11
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3294060, not young 3820303
+0.00 youngs/s, 0.76 non-youngs/s
+Pages read 3748479, created 199185, written 7023653
+0.18 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 964 / 1000, young-making rate 0 / 1000 not 157 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97275, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 1
+Buffer pool size   98297
+Free buffers       1015
+Database pages     97282
+Old database pages 35896
+Modified db pages  38
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3301412, not young 3815176
+0.00 youngs/s, 1.01 non-youngs/s
+Pages read 3745897, created 199334, written 7018354
+0.23 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 955 / 1000, young-making rate 0 / 1000 not 200 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97282, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 2
+Buffer pool size   98292
+Free buffers       1024
+Database pages     97268
+Old database pages 35885
+Modified db pages  0
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3290655, not young 3792954
+0.00 youngs/s, 0.00 non-youngs/s
+Pages read 3723346, created 199301, written 6993948
+0.00 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 0 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97268, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 3
+Buffer pool size   98298
+Free buffers       1023
+Database pages     97275
+Old database pages 35888
+Modified db pages  12
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3287671, not young 3803156
+0.00 youngs/s, 0.05 non-youngs/s
+Pages read 3734904, created 199243, written 7010138
+0.03 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 500 / 1000, young-making rate 0 / 1000 not 1000 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97275, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 4
+Buffer pool size   98292
+Free buffers       1024
+Database pages     97268
+Old database pages 35885
+Modified db pages  7
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3292018, not young 3807629
+0.03 youngs/s, 0.00 non-youngs/s
+Pages read 3738926, created 199356, written 7006108
+0.00 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 1000 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97268, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 5
+Buffer pool size   98297
+Free buffers       1024
+Database pages     97273
+Old database pages 35887
+Modified db pages  63
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 3294755, not young 3797558
+0.00 youngs/s, 0.00 non-youngs/s
+Pages read 3728480, created 199531, written 7000446
+0.00 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 0 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97273, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 6
+Buffer pool size   98292
+Free buffers       1024
+Database pages     97268
+Old database pages 35885
+Modified db pages  129
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 5363907, not young 3807101
+0.00 youngs/s, 0.00 non-youngs/s
+Pages read 3727560, created 199783, written 7002246
+0.00 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 0 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97268, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+---BUFFER POOL 7
+Buffer pool size   98298
+Free buffers       1022
+Database pages     97276
+Old database pages 35889
+Modified db pages  116
+Pending reads      0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 7574565, not young 3856154
+0.00 youngs/s, 0.56 non-youngs/s
+Pages read 3737666, created 200255, written 7019319
+0.05 reads/s, 0.00 creates/s, 0.00 writes/s
+Buffer pool hit rate 980 / 1000, young-making rate 0 / 1000 not 224 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 97276, unzip_LRU len: 0
+I/O sum[0]:cur[19], unzip sum[0]:cur[0]
+--------------
+
+
+---
+LOG
+---
+Log capacity                 2147483648
+Log capacity used            2147483648
+Log sequence number          45295346918
+Log buffer assigned up to    45295346918
+Log buffer completed up to   45295346918
+Log written up to            45295346918
+Log flushed up to            45295346918
+Added dirty pages up to      45295346918
+Pages flushed up to          45278654166
+Last checkpoint at           45278654166
+Log minimum file id is       677
+Log maximum file id is       678
+19060711 log i/o's done, 0.03 log i/o's/second
+----------------------
+
+
+-------------------------------------
+INSERT BUFFER AND ADAPTIVE HASH INDEX
+-------------------------------------
+Ibuf: size 1, free list len 0, seg size 2, 0 merges
+merged operations:
+ insert 0, delete mark 0, delete 0
+discarded operations:
+ insert 0, delete mark 0, delete 0
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+Hash table size 3187567, node heap has 0 buffer(s)
+0.00 hash searches/s, 1.85 non-hash searches/s
+---
+
+
+--------
+FILE I/O
+--------
+I/O thread 0 state: waiting for completed aio requests (insert buffer thread)
+I/O thread 1 state: waiting for completed aio requests (read thread)
+I/O thread 2 state: waiting for completed aio requests (read thread)
+I/O thread 3 state: waiting for completed aio requests (read thread)
+I/O thread 4 state: waiting for completed aio requests (read thread)
+I/O thread 5 state: waiting for completed aio requests (write thread)
+I/O thread 6 state: waiting for completed aio requests (write thread)
+I/O thread 7 state: waiting for completed aio requests (write thread)
+I/O thread 8 state: waiting for completed aio requests (write thread)
+Pending normal aio reads: [0, 0, 0, 0] , aio writes: [0, 0, 0, 0] ,
+ ibuf aio reads:
+Pending flushes (fsync) log: 0; buffer pool: 0
+29884785 OS file reads, 75155783 OS file writes, 5777163 OS fsyncs
+0.48 reads/s, 16384 avg bytes/read, 0.03 writes/s, 0.03 fsyncs/s
+-------------------------------------
+
