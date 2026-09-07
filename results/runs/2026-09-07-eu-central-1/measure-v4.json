@@ -1,0 +1,67 @@
+{
+  "arm": "v4",
+  "host": "payments-exp-v4.c56a6qk68hrv.eu-central-1.rds.amazonaws.com",
+  "started_at": "2026-09-07T06:52:06.649004821Z",
+  "ended_at": "2026-09-07T07:12:06.652816009Z",
+  "duration_s": 1200.003811178,
+  "target_qps": 500,
+  "actual_qps": 499.9600788026223,
+  "inserts": 599954,
+  "errors": 0,
+  "pool_size": 32,
+  "latency_us": {
+    "p50": 2031,
+    "p95": 2503,
+    "p99": 4319,
+    "p999": 28175,
+    "max": 118207,
+    "count": 599954
+  },
+  "reader_pool_size": 8,
+  "reader_qps": 500,
+  "actual_read_qps": 499.5417467979038,
+  "reads": 599452,
+  "read_errors": 0,
+  "read_latency_us": {
+    "p50": 695,
+    "p95": 1391,
+    "p99": 1920,
+    "p999": 8943,
+    "max": 111807,
+    "count": 599452
+  },
+  "ops": [
+    {
+      "op": "insert",
+      "target_qps": 500,
+      "actual_qps": 499.9600788026223,
+      "count": 599954,
+      "errors": 0,
+      "pool_size": 32,
+      "latency_us": {
+        "p50": 2031,
+        "p95": 2503,
+        "p99": 4319,
+        "p999": 28175,
+        "max": 118207,
+        "count": 599954
+      }
+    },
+    {
+      "op": "read",
+      "target_qps": 500,
+      "actual_qps": 499.5417467979038,
+      "count": 599452,
+      "errors": 0,
+      "pool_size": 8,
+      "latency_us": {
+        "p50": 695,
+        "p95": 1391,
+        "p99": 1920,
+        "p999": 8943,
+        "max": 111807,
+        "count": 599452
+      }
+    }
+  ]
+}
