@@ -4,7 +4,7 @@ Dedicated **short-lived** IAM user that can `terraform apply` and `terraform des
 
 Replace `ACCOUNT_ID` and `REGION` (stack default `eu-central-1`). Resource names assume `name_prefix` default `payments-exp`. If you change the prefix, replace that string throughout the policy.
 
-This stack does **not** create CloudWatch Logs groups or `enabled_cloudwatch_logs_exports`. Do not add `logs:*`.
+This stack does **not** create CloudWatch Logs groups or `enabled_cloudwatch_logs_exports`. Do not add `logs:*`. CloudWatch **metrics** and Performance Insights reads are a separate post-apply need (measure-window pulls); those go on `CloudWatchAndPiRead` below.
 
 The module **always creates** a dedicated VPC (default `10.42.0.0/16`), two public subnets, an Internet Gateway, and a public route table. There is no BYO-VPC path.
 
@@ -55,6 +55,19 @@ Create a customer-managed policy (e.g. `payments-exp-tf-apply-destroy`) with thi
         "ssm:GetParameter",
         "ssm:GetParameters",
         "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchAndPiRead",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:ListMetrics",
+        "pi:GetResourceMetrics",
+        "pi:DescribeDimensionKeys",
+        "pi:ListAvailableResourceMetrics"
       ],
       "Resource": "*"
     },
@@ -211,6 +224,8 @@ Create a customer-managed policy (e.g. `payments-exp-tf-apply-destroy`) with thi
 
 `CreateDBInstance` also evaluates the default MySQL 8.0 option group (`og:default:mysql-8-0`); this stack does not create a custom option group. The DB subnet group name is exactly `payments-exp` (no suffix), so both the exact `subgrp` ARN and `payments-exp-*` are listed.
 
+`rds:DescribeDBInstances` is already covered by `rds:Describe*` in `ReadDiscovery`. If that wildcard is dropped, add `rds:DescribeDBInstances` explicitly — it is needed to resolve instance identifiers / `DbiResourceId` before a CloudWatch / PI measure-window pull.
+
 VPC networking actions (`CreateVpc`, `CreateSubnet`, `CreateInternetGateway` / attach / detach / delete, route table create / delete / associate / disassociate, `CreateRoute` / `DeleteRoute`, `ModifyVpcAttribute`, plus `CreateTags` / `DeleteTags`) live on the region-scoped EC2 mutate statement. `ModifySubnetAttribute` is included so Terraform can set `map_public_ip_on_launch` on the public subnets. Least privilege is otherwise unchanged for the locked BOM (prefixed RDS / Secrets Manager / IAM).
 
 ## Console steps
@@ -230,3 +245,4 @@ Do not delete the user while the stack (or a failed apply) is still up.
 - **EC2 `Resource: "*"`** on the mutate statement is **intentional**. VPC, subnets, IGW, route tables, security groups, interface VPC endpoints, ENIs, `CreateTags`, and `RunInstances` / `TerminateInstances` do not usefully constrain to a `payments-exp-*` name prefix. The region condition is the bound.
 - **Secret `recovery_window_in_days = 0`.** Destroy force-deletes `payments-exp/exp_app` with no recovery window so the same name can be re-applied the same day. There is no undelete.
 - **RDS service-linked role (first-time RDS).** If the account has never created an RDS instance, `AWSServiceRoleForRDS` is missing. The account owner must let AWS create that SLR (or create it once). This user is not granted `iam:CreateServiceLinkedRole`.
+- **CloudWatch / PI after apply.** Without `CloudWatchAndPiRead`, post-run measure-window metric pulls fail with `AccessDenied` on `cloudwatch:GetMetricStatistics` / `pi:GetResourceMetrics`. This is metrics + Performance Insights, not CloudWatch Logs (`logs:*` stays omitted).
