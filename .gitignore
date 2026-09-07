@@ -3,5 +3,6 @@
 /dist/
 results/*
 !results/.gitkeep
+!results/runs/
 *.test
 coverage.out
